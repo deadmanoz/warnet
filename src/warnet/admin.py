@@ -20,7 +20,7 @@ from .process import run_command
 
 
 @click.group(name="admin", hidden=True)
-def admin():
+def admin() -> None:
     """Admin commands for warnet project management"""
     pass
 
@@ -29,7 +29,7 @@ admin.add_command(namespaces)
 
 
 @admin.command()
-def init():
+def init() -> None:
     """Initialize a warnet project in the current directory"""
     current_dir = os.getcwd()
     if os.listdir(current_dir):
@@ -57,7 +57,7 @@ def init():
     type=int,
     help="Duration of the token in seconds (default: 48 hours)",
 )
-def create_kubeconfigs(kubeconfig_dir, token_duration):
+def create_kubeconfigs(kubeconfig_dir: str, token_duration: int) -> None:
     """Create kubeconfig files for ServiceAccounts"""
     kubeconfig_dir = os.path.expanduser(kubeconfig_dir)
 

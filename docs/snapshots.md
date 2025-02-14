@@ -37,7 +37,7 @@ This will create a snapshot containing only the 'blocks' and 'chainstate' direct
 warnet snapshot --all -f debug.log -o ./node-logs
 
 # snapshot the chainstate and wallet from a mining node
-# this is particularly userful for premining a signet chain that
+# this is particularly useful for pre-mining a signet chain that
 # can be used later for starting a signet network
 warnet snapshot mining-node -f "chainstate,blocks,wallets"
 
@@ -50,7 +50,7 @@ warnet snapshot my-node -f mining_wallet
 
 ## End-to-End Example
 
-Here's a step-by-step guide on how to create a snapshot, upload it, and configure Warnet to use this snapshot when deploying. This particular example is for creating a premined signet chain:
+Here's a step-by-step guide on how to create a snapshot, upload it, and configure Warnet to use this snapshot when deploying. This particular example is for creating a pre-mined signet chain:
 
 1. Create a snapshot of the mining node:
    ```bash
@@ -81,7 +81,7 @@ Here's a step-by-step guide on how to create a snapshot, upload it, and configur
    warnet deploy networks/your_cool_network/network.yaml
    ```
 
-7. Warnet will now use the uploaded snapshot to initialize the Bitcoin data directory when creating the "miner" node. In this particular example, the blocks will then be distibuted to the other nodes via IBD and the mining node can resume signet mining off the chaintip by loading the wallet from the snapshot:
+7. Warnet will now use the uploaded snapshot to initialize the Bitcoin data directory when creating the "miner" node. In this particular example, the blocks will then be distributed to the other nodes via IBD and the mining node can resume signet mining off the chaintip by loading the wallet from the snapshot:
    ```bash
    warnet bitcoin rpc miner loadwallet mining_wallet
    ```

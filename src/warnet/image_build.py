@@ -22,7 +22,7 @@ def build_image(
     build_args: str,
     arches: str,
     action: str,
-):
+) -> bool:
     if not build_args:
         build_args = '"--disable-tests --without-gui --disable-bench --disable-fuzz-binary --enable-suppress-external-warnings --disable-dependency-tracking "'
     else:

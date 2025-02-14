@@ -26,7 +26,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-## Running
+## Deploying a network
 
 To get started first check you have all the necessary requirements:
 
@@ -44,7 +44,21 @@ warnet init
 warnet new <directory>
 ```
 
-Follow the guide to configure network variables.
+Follow the guide to configure network variables. Note that upon creating a new network, `networks`,
+`plugins` and `scenarios` directories will have been created in your project directory and
+populated with default content to get you started.
+
+## Running a scenario
+
+When you've created a new network, default scenarios will have been copied into your project directory
+for your convenience. With a network deployed, you can run now run a [scenario](scenarios.md).
+
+```bash
+warnet run <path-to-scenario-file>
+
+# reconnaissance scenario
+warnet run scenarios/reconnaissance.py
+```
 
 ## fork-observer
 

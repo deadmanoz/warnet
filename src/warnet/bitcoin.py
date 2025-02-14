@@ -37,7 +37,7 @@ def rpc(tank: str, method: str, params: str, namespace: Optional[str]):
     print(result)
 
 
-def _rpc(tank: str, method: str, params: str, namespace: Optional[str] = None):
+def _rpc(tank: str, method: str, params: str, namespace: Optional[str] = None) -> str:
     # bitcoin-cli should be able to read bitcoin.conf inside the container
     # so no extra args like port, chain, username or password are needed
     namespace = get_default_namespace_or(namespace)
@@ -67,7 +67,7 @@ def debug_log(tank: str, namespace: Optional[str]):
 @click.argument("pattern", type=str, required=True)
 @click.option("--show-k8s-timestamps", is_flag=True, default=False, show_default=True)
 @click.option("--no-sort", is_flag=True, default=False, show_default=True)
-def grep_logs(pattern: str, show_k8s_timestamps: bool, no_sort: bool):
+def grep_logs(pattern: str, show_k8s_timestamps: bool, no_sort: bool) -> list[tuple[str, str, str]]:
     """
     Grep combined bitcoind logs using regex <pattern>
     """
@@ -130,7 +130,7 @@ def grep_logs(pattern: str, show_k8s_timestamps: bool, no_sort: bool):
 @click.argument("tank_a", type=str, required=True)
 @click.argument("tank_b", type=str, required=True)
 @click.option("--chain", default="regtest", show_default=True)
-def messages(tank_a: str, tank_b: str, chain: str):
+def messages(tank_a: str, tank_b: str, chain: str) -> None:
     """
     Fetch messages sent between <tank_a pod name> and <tank_b pod name> in [chain]
 
@@ -238,7 +238,7 @@ def get_messages(tank_a: str, tank_b: str, chain: str, namespace_a: str, namespa
 
 # This function is a hacked-up copy of process_file() from
 # Bitcoin Core contrib/message-capture/message-capture-parser.py
-def parse_raw_messages(blob: bytes, outbound: bool):
+def parse_raw_messages(blob: bytes, outbound: bool) -> list[dict]:
     TIME_SIZE = 8
     LENGTH_SIZE = 4
     MSGTYPE_SIZE = 12

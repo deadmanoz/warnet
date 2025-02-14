@@ -19,7 +19,7 @@ def get_signet_network_magic_from_node(node):
 
 
 # The actual scenario is a class like a Bitcoin Core functional test.
-# Commander is a subclass of BitcoinTestFramework instide Warnet
+# Commander is a subclass of BitcoinTestFramework inside Warnet
 # that allows to operate on containerized nodes instead of local nodes.
 class Reconnaissance(Commander):
     def set_test_params(self):
@@ -38,7 +38,7 @@ class Reconnaissance(Commander):
         # Just like a typical Bitcoin Core functional test, this executes an
         # RPC on a node in the network. The actual node at self.nodes[0] may
         # be different depending on the user deploying the scenario. Users in
-        # Warnet may have different namepsace access but everyone should always
+        # Warnet may have different namespace access but everyone should always
         # have access to at least one node.
         peerinfo = self.nodes[0].getpeerinfo()
         for peer in peerinfo:

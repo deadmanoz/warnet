@@ -129,28 +129,28 @@ The python source code found in *src/warnet* serves to give users a way to creat
 There are eight categories of python program files in Warnet:
 
 1. Bitcoin images
-  * *image.py* and *image_build.py* - the logic that helps the user create bitcoin node images
+  * `image.py` and `image_build.py` - the logic that helps the user create bitcoin node images
 2. Bitcoin interaction
-  * *bitcoin.py* - make it easy to interact with bitcoin nodes in the simulated network
+  * `bitcoin.py` - make it easy to interact with bitcoin nodes in the simulated network
 3. Scenario interaction
-  * *control.py* - launch scenarios in order to interact with the simulated Bitcoin network
+  * `control.py` - launch scenarios in order to interact with the simulated Bitcoin network
 4. Kubernetes
-  * *k8s.py* - gather Kubernetes configuration data; retrieve Kubernetes resources
-  * *status.py* - make it easy for the user to see the status of the simulated bitcoin network
+  * `k8s.py` - gather Kubernetes configuration data; retrieve Kubernetes resources
+  * `status.py` - make it easy for the user to see the status of the simulated bitcoin network
 5. Resource configuration pipeline
-  * *admin.py* - copy configurations for *resources* such as namespaces and put them in the user's directory
-  * *deploy.py* - take configurations for *resources* and put them into the Kubernetes cluster
-  * *network.py* - copy *resources* to the users Warnet directory
-  * *namespaces.py* - copy *resources* to the users Warnet directory; interact with namespaces in the cluster
+  * `admin.py` - copy configurations for *resources* such as namespaces and put them in the user's directory
+  * `deploy.py` - take configurations for *resources* and put them into the Kubernetes cluster
+  * `network.py` - copy *resources* to the users Warnet directory
+  * `namespaces.py` - copy *resources* to the users Warnet directory; interact with namespaces in the cluster
 6. User interaction
-  * *main.py* - provide the interface for the `warnet` command line program
+  * `main.py` - provide the interface for the `warnet` command line program
 7. Host computer
-  * *process.py* - provides a way to run commands on the user's host computer
+  * `process.py` - provides a way to run commands on the user's host computer
 8. Externalized configuration
-  * *constants.py* - this holds values which occur repeatedly in the code base
+  * `constants.py` - this holds values which occur repeatedly in the code base
 
 ### Overview of test
-The *test_base.py* file forms the basis of the *test* section. Each test uses *TestBase* which controls the test running framework.
+The `test_base.py` file forms the basis of the `test` section. Each test uses `TestBase` which controls the test running framework.
 
 ### Operating in the network with "scenarios"/Commanders
 Warnet includes the capability to run "scenarios" on the network. These are python files which can be found in *resources/scenarios*, or copied by default into a new project directory.

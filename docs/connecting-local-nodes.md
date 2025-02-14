@@ -2,7 +2,7 @@
 
 ## Connections from cluster into local machine
 
-[Telepresence](https://github.com/telepresenceio/telepresence) can be used to make a connection from the cluster to your local machine. Telepresence is designed to intercept cluster commmunication and forward it to your local machine so we will have to install a dummy pod and service to receive the traffic that will get forwarded.
+[Telepresence](https://github.com/telepresenceio/telepresence) can be used to make a connection from the cluster to your local machine. Telepresence is designed to intercept cluster communication and forward it to your local machine so we will have to install a dummy pod and service to receive the traffic that will get forwarded.
 
 ### Run Warnet network
 
@@ -59,7 +59,7 @@ kubectl expose deploy local-bitcoind --port 18444 --target-port 18444
 
 ### Instruct Telepresence to intercept traffic to the dummy pod
 
-The intercept command starts the process that will recieve the traffic. In this case, bitcoind process.
+The intercept command starts the process that will receive the traffic. In this case, the bitcoind process.
 
 ```shell
 mkdir /tmp/connect
@@ -81,7 +81,7 @@ warnet bitcoin rpc 0 getpeerinfo
 # Disconnect from the cluster
 telepresence quit -s
 # Remove Telepresence from the cluster
-telepresent helm uninstall
+telepresence helm uninstall
 # Remove Telepresence from your computer
 sudo rm /usr/local/bin/telepresence
 ```

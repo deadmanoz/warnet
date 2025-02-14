@@ -1,8 +1,16 @@
-def create_cycle_graph(n: int, version: str, bitcoin_conf: str | None, random_version: bool):
+from typing import Any, Optional
+
+def create_cycle_graph(
+    n: int,
+    version: str,
+    bitcoin_conf: str | None,
+    random_version: bool
+) -> Any:
+    """Create a cycle graph configuration."""
     raise NotImplementedError("create_cycle_graph function is not implemented")
 
 
-def parse_bitcoin_conf(file_content):
+def parse_bitcoin_conf(file_content: str) -> dict[Optional[str], list[tuple[str, str]]]: # TODO: check me
     """
     Custom parser for INI-style bitcoin.conf
 
@@ -32,7 +40,10 @@ def parse_bitcoin_conf(file_content):
     return result
 
 
-def dump_bitcoin_conf(conf_dict, for_graph=False):
+def dump_bitcoin_conf(
+    conf_dict: dict[Optional[str], list[tuple[str, str]]], # TODO: check me
+    for_graph: bool = False
+) -> str:
     """
     Converts a dictionary representation of bitcoin.conf content back to INI-style string.
 
