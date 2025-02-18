@@ -3,10 +3,11 @@
 from time import sleep
 
 from commander import Commander
+from test_framework.test_node import TestNode
 
 
 class Miner:
-    def __init__(self, node, mature):
+    def __init__(self, node: TestNode, mature: bool):
         self.node = node
         self.wallet = Commander.ensure_miner(self.node)
         self.addr = self.wallet.getnewaddress()

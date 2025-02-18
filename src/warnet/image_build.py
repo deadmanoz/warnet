@@ -6,7 +6,16 @@ ARCHES = ["amd64", "arm64", "armhf"]
 dockerfile_path = files("resources.images.bitcoin").joinpath("Dockerfile")
 
 
-def run_command(command):
+def run_command(command: str) -> bool:
+    """
+    Execute a shell command and return its success status.
+
+    Args:
+        command: Shell command to execute
+
+    Returns:
+        bool: True if command executed successfully, False otherwise
+    """
     try:
         subprocess.run(command, shell=True, check=True)
         return True
@@ -23,6 +32,21 @@ def build_image(
     arches: str,
     action: str,
 ) -> bool:
+    """
+    Build a Docker image for Bitcoin Core with specified parameters.
+
+    Args:
+        repo: Git repository URL
+        commit_sha: Git commit hash to build
+        docker_registry: Docker registry to push to
+        tags: Comma-separated list of tags for the image
+        build_args: Additional build arguments for Bitcoin Core compilation
+        arches: Comma-separated list of target architectures (e.g. amd64, arm64, armhf)
+        action: Build action (e.g. 'load' for local, 'push' for registry)
+
+    Returns:
+        bool: True if build succeeds, False otherwise
+    """
     if not build_args:
         build_args = '"--disable-tests --without-gui --disable-bench --disable-fuzz-binary --enable-suppress-external-warnings --disable-dependency-tracking "'
     else:

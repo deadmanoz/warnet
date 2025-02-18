@@ -2,6 +2,18 @@ import subprocess
 
 
 def run_command(command: str) -> str:
+    """
+    Run a command and return the output.
+
+    Args:
+        command: Command to run
+
+    Returns:
+        str: Output of the command
+
+    Raises:
+        Exception: If the command fails
+    """
     result = subprocess.run(command, shell=True, capture_output=True, text=True, executable="bash")
     if result.returncode != 0:
         raise Exception(result.stderr)
@@ -9,6 +21,18 @@ def run_command(command: str) -> str:
 
 
 def stream_command(command: str) -> bool:
+    """
+    Stream the output of a command.
+
+    Args:
+        command: Command to run
+
+    Raises:
+        Exception: If the command fails
+
+    Returns:
+        bool: True if the command was executed successfully
+    """
     process = subprocess.Popen(
         ["bash", "-c", command],
         stdout=subprocess.PIPE,

@@ -48,9 +48,11 @@ class Reconnaissance(Commander):
 
         # We pick a node on the network to attack
         victim = peerinfo[0]
+        self.log.info(f"Victim: {victim}")
 
         # regtest or signet
         chain = self.nodes[0].chain
+        self.log.info(f"Chain: {chain}")
 
         # The victim's address could be an explicit IP address
         # OR a kubernetes hostname (use default chain p2p port)

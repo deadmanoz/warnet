@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -13,8 +14,13 @@ from .constants import (
 from .process import run_command, stream_command
 
 
-def copy_namespaces_defaults(directory: Path):
-    """Create the project structure for a warnet project"""
+def copy_namespaces_defaults(directory: Path) -> None:
+    """
+    Create the project structure for a warnet project and copy default namespace files.
+
+    Args:
+        directory: Base directory for the warnet project
+    """
     (directory / NAMESPACES_DIR.name / DEFAULT_NAMESPACES).mkdir(parents=True, exist_ok=True)
     target_namespaces_defaults = (
         directory / NAMESPACES_DIR.name / DEFAULT_NAMESPACES / DEFAULTS_NAMESPACE_FILE
@@ -29,12 +35,12 @@ def copy_namespaces_defaults(directory: Path):
 
 
 @click.group(name="namespaces")
-def namespaces():
-    """Namespaces commands"""
+def namespaces() -> None:
+    """Commands for managing warnet namespaces"""
 
 
 @namespaces.command()
-def list():
+def list() -> None:
     """List all namespaces with 'wargames-' prefix"""
     cmd = "kubectl get namespaces -o jsonpath='{.items[*].metadata.name}'"
     res = run_command(cmd)
@@ -54,8 +60,14 @@ def list():
 @namespaces.command()
 @click.option("--all", "destroy_all", is_flag=True, help="Destroy all warnet- prefixed namespaces")
 @click.argument("namespace", required=False)
-def destroy(destroy_all: bool, namespace: str):
-    """Destroy a specific namespace or all 'wargames-' prefixed namespaces"""
+def destroy(destroy_all: bool, namespace: Optional[str]) -> None:
+    """
+    Destroy a specific namespace or all 'wargames-' prefixed namespaces.
+
+    Args:
+        destroy_all: If True, destroy all warnet namespaces
+        namespace: Specific namespace to destroy, required if destroy_all is False
+    """
     if destroy_all:
         cmd = "kubectl get namespaces -o jsonpath='{.items[*].metadata.name}'"
         res = run_command(cmd)

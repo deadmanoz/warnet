@@ -102,7 +102,7 @@ collectLogs: false
 metricsExport: false
 prometheusMetricsPort: 9332
 
-# These are values that are propogated to the sub-charts (i.e. lightning nodes)
+# These are values that are propagated to the sub-charts (i.e. lightning nodes)
 global:
   chain: regtest
   regtest:

@@ -19,7 +19,7 @@ def cli():
     pass
 
 @click.command()
-def version():
+def version() -> None:
     """Display the installed version of warnet"""
     try:
         version = importlib.metadata.version("warnet")

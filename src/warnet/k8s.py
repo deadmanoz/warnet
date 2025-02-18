@@ -31,16 +31,37 @@ class K8sError(Exception):
 
 
 def get_static_client() -> CoreV1Api:
+    """
+    Get a static Kubernetes client configured with the default kubeconfig.
+
+    Returns:
+        CoreV1Api: Configured Kubernetes client
+    """
     config.load_kube_config(config_file=KUBECONFIG)
     return client.CoreV1Api()
 
 
 def get_dynamic_client() -> DynamicClient:
+    """
+    Get a dynamic Kubernetes client configured with the default kubeconfig.
+
+    Returns:
+        DynamicClient: Configured dynamic Kubernetes client
+    """
     config.load_kube_config(config_file=KUBECONFIG)
     return DynamicClient(client.ApiClient())
 
 
 def get_pods() -> list[V1Pod]:
+    """
+    Get all pods from non-internal namespaces.
+
+    Returns:
+        list[V1Pod]: List of all pods
+
+    Raises:
+        Exception: If pod listing fails
+    """
     sclient = get_static_client()
     pods: list[V1Pod] = []
     namespaces = get_namespaces()
@@ -56,12 +77,31 @@ def get_pods() -> list[V1Pod]:
 
 
 def get_pod(name: str, namespace: Optional[str] = None) -> V1Pod:
+    """
+    Get a specific pod by name and namespace.
+
+    Args:
+        name: Name of the pod
+        namespace: Namespace of the pod, uses default if None
+
+    Returns:
+        V1Pod: The requested pod
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
     return sclient.read_namespaced_pod(name=name, namespace=namespace)
 
 
 def get_mission(mission: str) -> list[V1Pod]:
+    """
+    Get all pods labelled with a specific mission.
+
+    Args:
+        mission: Mission label to filter by
+
+    Returns:
+        list[V1Pod]: List of pods with matching mission label
+    """
     pods = get_pods()
     crew: list[V1Pod] = []
     for pod in pods:
@@ -70,7 +110,17 @@ def get_mission(mission: str) -> list[V1Pod]:
     return crew
 
 
-def get_pod_exit_status(pod_name, namespace: Optional[str] = None):
+def get_pod_exit_status(pod_name: str, namespace: Optional[str] = None) -> Optional[int]:
+    """
+    Get the exit status of a pod's container.
+
+    Args:
+        pod_name: Name of the pod
+        namespace: Namespace of the pod, uses default if None
+
+    Returns:
+        Optional[int]: Exit code if pod terminated, None otherwise
+    """
     namespace = get_default_namespace_or(namespace)
     try:
         sclient = get_static_client()
@@ -84,7 +134,16 @@ def get_pod_exit_status(pod_name, namespace: Optional[str] = None):
         return None
 
 
-def get_channels(namespace: Optional[str] = None) -> any:
+def get_channels(namespace: Optional[str] = None) -> list[dict]:
+    """
+    Get all channel configurations from config maps in a namespace.
+
+    Args:
+        namespace: Namespace to search in, uses default if None
+
+    Returns:
+        list[dict]: List of channel configurations
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
     config_maps = sclient.list_namespaced_config_map(
@@ -100,8 +159,21 @@ def get_channels(namespace: Optional[str] = None) -> any:
 
 
 def create_kubernetes_object(
-    kind: str, metadata: dict[str, any], spec: dict[str, any] = None
-) -> dict[str, any]:
+    kind: str,
+    metadata: dict[str, Any],
+    spec: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
+    """
+    Create a Kubernetes object configuration.
+
+    Args:
+        kind: Kubernetes object kind
+        metadata: Object metadata
+        spec: Object specification
+
+    Returns:
+        dict[str, Any]: Complete Kubernetes object configuration
+    """
     metadata["namespace"] = get_default_namespace()
     obj = {
         "apiVersion": "v1",
@@ -114,7 +186,15 @@ def create_kubernetes_object(
 
 
 def set_kubectl_context(namespace: str) -> bool:
-    """Set the default kubectl context to the specified namespace."""
+    """
+    Set the default kubectl context to the specified namespace.
+
+    Args:
+        namespace: Target namespace
+
+    Returns:
+        bool: True if context was set successfully, False otherwise
+    """
     command = f"kubectl config set-context --current --namespace={namespace}"
     result = stream_command(command)
     if result:
@@ -125,13 +205,31 @@ def set_kubectl_context(namespace: str) -> bool:
 
 
 def apply_kubernetes_yaml(yaml_file: str) -> bool:
-    """Apply a kubernetes yaml file."""
+    """
+    Apply a kubernetes yaml file.
+
+    Args:
+        yaml_file: Path to yaml file
+
+    Returns:
+        bool: True if applied successfully, False otherwise
+    """
     command = f"kubectl apply -f {yaml_file}"
-    return stream_command(command)
+    result = stream_command(command)
+    if result:
+        print(f"Kubernetes object applied successfully from {yaml_file}")
+    else:
+        print(f"Failed to apply Kubernetes object from {yaml_file}")
+    return result
 
 
-def apply_kubernetes_yaml_obj(yaml_obj: str) -> None:
-    """Apply a kubernetes yaml object."""
+def apply_kubernetes_yaml_obj(yaml_obj: dict[str, Any]) -> None:
+    """
+    Apply a kubernetes yaml object.
+
+    Args:
+        yaml_obj: Kubernetes object configuration
+    """
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
         yaml.dump(yaml_obj, temp_file)
         temp_file_path = temp_file.name
@@ -143,20 +241,50 @@ def apply_kubernetes_yaml_obj(yaml_obj: str) -> None:
 
 
 def delete_namespace(namespace: str) -> bool:
-    """Delete a kubernetes namespace."""
+    """
+    Delete a kubernetes namespace.
+
+    Args:
+        namespace: Namespace to delete
+
+    Returns:
+        bool: True if deleted successfully
+    """
     command = f"kubectl delete namespace {namespace} --ignore-not-found"
-    return run_command(command)
+    result = stream_command(command)
+    if result:
+        print(f"Kubernetes namespace {namespace} deleted successfully")
+    else:
+        print(f"Failed to delete Kubernetes namespace {namespace}")
+    return result
 
 
 def delete_pod(pod_name: str, namespace: Optional[str] = None) -> bool:
-    """Delete a kubernetes pod."""
+    """
+    Delete a kubernetes pod.
+
+    Args:
+        pod_name: Name of pod to delete
+        namespace: Namespace of pod, uses default if None
+
+    Returns:
+        bool: True if deleted successfully
+    """
     namespace = get_default_namespace_or(namespace)
     command = f"kubectl -n {namespace} delete pod {pod_name}"
     return stream_command(command)
 
 
 def get_default_namespace() -> str:
-    """Get the default kubernetes namespace."""
+    """
+    Get the default kubernetes namespace.
+
+    Returns:
+        str: Default namespace name
+
+    Raises:
+        SystemExit: If kubectl is not installed
+    """
     command = "kubectl config view --minify -o jsonpath='{..namespace}'"
     try:
         kubectl_namespace = run_command(command)
@@ -172,7 +300,15 @@ def get_default_namespace() -> str:
 
 
 def get_default_namespace_or(namespace: Optional[str]) -> str:
-    """Get the provided namespace or default if None."""
+    """
+    Get the provided namespace or default if None.
+
+    Args:
+        namespace: Optional namespace name
+
+    Returns:
+        str: Provided namespace or default namespace
+    """
     return namespace if namespace else get_default_namespace()
 
 
@@ -183,7 +319,16 @@ def snapshot_bitcoin_datadir(
     filters: list[str] = None,
     namespace: Optional[str] = None,
 ) -> None:
-    """Snapshot bitcoin data directory."""
+    """
+    Snapshot bitcoin data directory from a pod.
+
+    Args:
+        pod_name: Name of the pod
+        chain: Bitcoin chain type (mainnet/testnet/etc)
+        local_path: Local path to save snapshot
+        filters: List of file/directory patterns to include
+        namespace: Namespace of the pod, uses default if None
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
 
@@ -292,7 +437,17 @@ def snapshot_bitcoin_datadir(
 
 
 def wait_for_pod_ready(name: str, namespace: str, timeout: int = 300) -> bool:
-    """Wait for a pod to be ready."""
+    """
+    Wait for a pod to be ready.
+
+    Args:
+        name: Name of the pod
+        namespace: Namespace of the pod
+        timeout: Maximum time to wait in seconds, defaults to 300
+
+    Returns:
+        bool: True if pod becomes ready within timeout
+    """
     sclient = get_static_client()
     w = watch.Watch()
     for event in w.stream(
@@ -315,7 +470,18 @@ def wait_for_init(
     namespace: Optional[str] = None, 
     quiet: bool = False
 ) -> bool:
-    """Wait for initContainer in pod to be ready."""
+    """
+    Wait for initContainer in pod to be ready.
+
+    Args:
+        pod_name: Name of the pod
+        timeout: Maximum time to wait in seconds
+        namespace: Namespace of the pod, uses default if None
+        quiet: Suppress output messages if True
+
+    Returns:
+        bool: True if init container becomes ready within timeout
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
     w = watch.Watch()
@@ -338,17 +504,30 @@ def wait_for_init(
 
 
 def wait_for_ingress_controller(timeout: int = 300) -> bool:
-    """Wait for ingress controller to be ready."""
-    # get name of ingress controller pod
+    """
+    Wait for ingress controller to be ready.
+
+    Args:
+        timeout: Maximum time to wait in seconds, defaults to 300
+
+    Returns:
+        bool: True if ingress controller becomes ready within timeout
+    """
     sclient = get_static_client()
     pods = sclient.list_namespaced_pod(namespace=INGRESS_NAMESPACE)
     for pod in pods.items:
         if "ingress-nginx-controller" in pod.metadata.name:
             return wait_for_pod_ready(pod.metadata.name, INGRESS_NAMESPACE, timeout)
+    return False
 
 
 def get_ingress_ip_or_host() -> Optional[str]:
-    """Get ingress IP or hostname."""
+    """
+    Get ingress IP or hostname.
+
+    Returns:
+        Optional[str]: IP address or hostname of the ingress controller, None if not found
+    """
     config.load_kube_config()
     networking_v1 = client.NetworkingV1Api()
     try:
@@ -367,7 +546,21 @@ def pod_log(
     follow: bool = False,
     namespace: Optional[str] = None
 ) -> Any:  # Returns kubernetes.stream.stream.WSClient
-    """Get pod logs."""
+    """
+    Get pod logs.
+
+    Args:
+        pod_name: Name of the pod
+        container_name: Name of specific container to get logs from
+        follow: Stream logs continuously if True
+        namespace: Namespace of the pod, uses default if None
+
+    Returns:
+        WebSocket client stream of pod logs
+
+    Raises:
+        Exception: If log retrieval fails
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
 
@@ -388,7 +581,14 @@ def wait_for_pod(
     timeout_seconds: int = 10,
     namespace: Optional[str] = None
 ) -> None:
-    """Wait for pod to exit pending state."""
+    """
+    Wait for pod to exit pending state.
+
+    Args:
+        pod_name: Name of the pod
+        timeout_seconds: Maximum time to wait in seconds, defaults to 10
+        namespace: Namespace of the pod, uses default if None
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
     while timeout_seconds > 0:
@@ -407,7 +607,20 @@ def write_file_to_container(
     namespace: Optional[str] = None,
     quiet: bool = False
 ) -> Optional[bool]:
-    """Write a file to a container."""
+    """
+    Write a file to a container.
+
+    Args:
+        pod_name: Name of the pod
+        container_name: Name of the container
+        dst_path: Destination path in container
+        data: Data to write to file
+        namespace: Namespace of the pod, uses default if None
+        quiet: Suppress output messages if True
+
+    Returns:
+        Optional[bool]: True if successful, None if failed
+    """
     namespace = get_default_namespace_or(namespace)
     sclient = get_static_client()
     exec_command = ["sh", "-c", f"cat > {dst_path}.tmp && sync"]
@@ -446,14 +659,32 @@ def write_file_to_container(
 
 
 def get_kubeconfig_value(jsonpath: str) -> str:
-    """Get a value from kubeconfig using jsonpath."""
+    """
+    Get a value from kubeconfig using jsonpath.
+
+    Args:
+        jsonpath: JSONPath expression to extract value
+
+    Returns:
+        str: Extracted value from kubeconfig
+    """
     command = f"kubectl config view --minify --raw -o jsonpath={jsonpath}"
     return run_command(command)
 
 
 def get_cluster_of_current_context(kubeconfig_data: dict) -> dict:
-    """Get cluster info from current context."""
-    # Get the current context name
+    """
+    Get cluster info from current context.
+
+    Args:
+        kubeconfig_data: Kubeconfig data as dictionary
+
+    Returns:
+        dict: Cluster configuration for current context
+
+    Raises:
+        K8sError: If context or cluster information is missing
+    """
     current_context_name = kubeconfig_data.get("current-context")
 
     if not current_context_name:
@@ -495,7 +726,12 @@ def get_cluster_of_current_context(kubeconfig_data: dict) -> dict:
 
 
 def get_namespaces() -> list[V1Namespace]:
-    """Get all (non-internal) kubernetes namespaces."""
+    """
+    Get all (non-internal) kubernetes namespaces.
+
+    Returns:
+        list[V1Namespace]: List of non-internal namespaces
+    """
     sclient = get_static_client()
     try:
         return [
@@ -503,7 +739,6 @@ def get_namespaces() -> list[V1Namespace]:
             for ns in sclient.list_namespace().items
             if ns.metadata.name not in KUBE_INTERNAL_NAMESPACES
         ]
-
     except ApiException as e:
         if e.status == 403:
             ns = sclient.read_namespace(name=get_default_namespace())
@@ -514,8 +749,14 @@ def get_namespaces() -> list[V1Namespace]:
 
 def get_namespaces_by_type(namespace_type: str) -> list[V1Namespace]:
     """
-    Get all namespaces beginning with `prefix`.
+    Get all namespaces beginning with specified prefix (namespace_type).
     Returns empty list of no namespaces if the specified prefix is not found.
+
+    Args:
+        namespace_type: Prefix to filter namespaces
+
+    Returns:
+        list[V1Namespace]: List of matching namespaces
     """
     namespaces = get_namespaces()
     return [ns for ns in namespaces if ns.metadata.name.startswith(namespace_type)]
@@ -525,6 +766,12 @@ def get_service_accounts_in_namespace(namespace: str) -> list[str]:
     """
     Get all service accounts in a namespace.
     Returns an empty list if no service accounts are found in the specified namespace.
+
+    Args:
+        namespace: Namespace to query
+
+    Returns:
+        list[str]: List of service account names (excluding 'default')
     """
     command = f"kubectl get serviceaccounts -n {namespace} -o jsonpath={{.items[*].metadata.name}}"
     # skip the default service account created by k8s
@@ -533,7 +780,15 @@ def get_service_accounts_in_namespace(namespace: str) -> list[str]:
 
 
 def can_delete_pods(namespace: Optional[str] = None) -> bool:
-    """Check if current user can delete pods."""
+    """
+    Check if current user can delete pods.
+
+    Args:
+        namespace: Namespace to check permissions in, uses default if None
+
+    Returns:
+        bool: True if user has permission to delete pods
+    """
     namespace = get_default_namespace_or(namespace)
 
     get_static_client()
@@ -561,14 +816,24 @@ def can_delete_pods(namespace: Optional[str] = None) -> bool:
         else:
             print(f"Service account CANNOT delete pods in namespace '{namespace}'.")
             return False
-
     except ApiException as e:
         print(f"An error occurred: {e}")
         return False
 
 
 def open_kubeconfig(kubeconfig_path: str) -> dict:
-    """Open and parse kubeconfig file."""
+    """
+    Open and parse kubeconfig file.
+
+    Args:
+        kubeconfig_path: Path to kubeconfig file
+
+    Returns:
+        dict: Parsed kubeconfig data
+
+    Raises:
+        K8sError: If file not found or parsing fails
+    """
     try:
         with open(kubeconfig_path) as file:
             return yaml.safe_load(file)
@@ -579,7 +844,16 @@ def open_kubeconfig(kubeconfig_path: str) -> dict:
 
 
 def write_kubeconfig(kube_config: dict, kubeconfig_path: str) -> None:
-    """Write kubeconfig file."""
+    """
+    Write kubeconfig file.
+
+    Args:
+        kube_config: Kubeconfig data to write
+        kubeconfig_path: Path to write kubeconfig file
+
+    Raises:
+        K8sError: If writing fails
+    """
     dir_name = os.path.dirname(kubeconfig_path)
     try:
         with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False) as temp_file:
@@ -598,6 +872,15 @@ def download(
 ) -> Path:
     """
     Download item from the `source_path` in the specified pod to the `destination_path` on the host.
+
+    Args:
+        pod_name: Name of the pod
+        source_path: Path in pod to download from
+        destination_path: Local path to download to
+        namespace: Namespace of the pod, uses default if None
+
+    Returns:
+        Path: Path where item was downloaded
     """
 
     namespace = get_default_namespace_or(namespace)

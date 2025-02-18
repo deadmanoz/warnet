@@ -146,7 +146,7 @@ class Commander(BitcoinTestFramework):
         signal.signal(signal.SIGTERM, self.handle_sigterm)
 
         # hacked from _start_logging()
-        # Scenarios will log plain messages to stdout only, which will can redirected by warnet
+        # Scenarios will log plain messages to stdout only, which can be redirected by warnet
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.setLevel(logging.INFO)  # set this to DEBUG to see ALL RPC CALLS
 

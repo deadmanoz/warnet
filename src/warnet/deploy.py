@@ -45,7 +45,25 @@ from .process import run_command, stream_command
 HINT = "\nAre you trying to run a scenario? See `warnet run --help`"
 
 
-def validate_directory(ctx, param, value):
+def validate_directory(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: str
+) -> Path:
+    """
+    Validates that the provided directory exists and contains required configuration files.
+
+    Args:
+        ctx: Click context object
+        param: Click parameter being validated
+        value: Directory path as string
+
+    Returns:
+        Path: Validated directory path
+
+    Raises:
+        click.BadParameter: If directory is invalid or missing required files
+    """
     directory = Path(value)
     if not directory.is_dir():
         raise click.BadParameter(f"'{value}' is not a valid directory.{HINT}")
@@ -74,8 +92,21 @@ def deploy(directory, debug, namespace, to_all_users, unknown_args):
     _deploy(directory, debug, namespace, to_all_users)
 
 
-def _deploy(directory, debug, namespace, to_all_users):
-    """Deploy a warnet with topology loaded from <directory>"""
+def _deploy(
+    directory: Path,
+    debug: bool,
+    namespace: Optional[str],
+    to_all_users: bool
+) -> None:
+    """
+    Deploy a warnet with topology loaded from directory.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+        namespace: Optional namespace to deploy to
+        to_all_users: Deploy network to all user namespaces if True
+    """
     directory = Path(directory)
 
     if to_all_users:
@@ -239,6 +270,16 @@ def deploy_logging_crd(directory: Path, debug: bool) -> bool:
 
 
 def deploy_logging_stack(directory: Path, debug: bool) -> bool:
+    """
+    Deploy the logging stack if logging is required by the network configuration.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+
+    Returns:
+        bool: True if deployment successful, False otherwise
+    """
     if not check_logging_required(directory):
         return False
 
@@ -251,7 +292,14 @@ def deploy_logging_stack(directory: Path, debug: bool) -> bool:
     return True
 
 
-def deploy_caddy(directory: Path, debug: bool):
+def deploy_caddy(directory: Path, debug: bool) -> None:
+    """
+    Deploy the Caddy server for the warnet dashboard.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+    """
     network_file_path = directory / NETWORK_FILE
     with network_file_path.open() as f:
         network_file = yaml.safe_load(f)
@@ -276,7 +324,17 @@ def deploy_caddy(directory: Path, debug: bool):
     click.echo("\nTo access the warnet dashboard run:\n  warnet dashboard")
 
 
-def deploy_ingress(directory: Path, debug: bool):
+def deploy_ingress(directory: Path, debug: bool) -> bool:
+    """
+    Deploy the ingress controller if logging or fork observer is enabled.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+
+    Returns:
+        bool: True if deployment successful, False otherwise
+    """
     # Deploy ingress if either logging or fork observer is enabled
     network_file_path = directory / NETWORK_FILE
     with network_file_path.open() as f:
@@ -298,6 +356,16 @@ def deploy_ingress(directory: Path, debug: bool):
 
 
 def deploy_fork_observer(directory: Path, debug: bool) -> bool:
+    """
+    Deploy the fork observer if it is enabled in the network configuration.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+
+    Returns:
+        bool: True if deployment successful, False otherwise
+    """
     network_file_path = directory / NETWORK_FILE
     with network_file_path.open() as f:
         network_file = yaml.safe_load(f)
@@ -357,7 +425,19 @@ rpc_password = "tabconf2024"
     return True
 
 
-def deploy_network(directory: Path, debug: bool = False, namespace: Optional[str] = None):
+def deploy_network(
+    directory: Path,
+    debug: bool = False,
+    namespace: Optional[str] = None
+) -> None:
+    """
+    Deploy the network configuration by creating nodes and initializing Lightning Network if needed.
+
+    Args:
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+        namespace: Optional namespace to deploy to
+    """
     network_file_path = directory / NETWORK_FILE
     namespace = get_default_namespace_or(namespace)
 
@@ -392,7 +472,21 @@ def deploy_network(directory: Path, debug: bool = False, namespace: Optional[str
         _logs(pod_name=name, follow=True, namespace=namespace)
 
 
-def deploy_single_node(node, directory: Path, debug: bool, namespace: str):
+def deploy_single_node(
+    node: dict,
+    directory: Path,
+    debug: bool,
+    namespace: str
+) -> None:
+    """
+    Deploy a single node in the network.
+
+    Args:
+        node: Node configuration dictionary
+        directory: Path to the directory containing network configuration
+        debug: Enable debug mode if True
+        namespace: Namespace to deploy the node to
+    """
     defaults_file_path = directory / DEFAULTS_FILE
     click.echo(f"Deploying node: {node.get('name')}")
     temp_override_file_path = ""
@@ -434,7 +528,13 @@ def deploy_single_node(node, directory: Path, debug: bool, namespace: str):
             Path(temp_override_file_path).unlink()
 
 
-def deploy_namespaces(directory: Path):
+def deploy_namespaces(directory: Path) -> None:
+    """
+    Deploy multiple namespaces based on configuration.
+
+    Args:
+        directory: Path to the directory containing namespace configuration
+    """
     namespaces_file_path = directory / NAMESPACES_FILE
     defaults_file_path = directory / DEFAULTS_NAMESPACE_FILE
 
@@ -460,7 +560,17 @@ def deploy_namespaces(directory: Path):
         p.join()
 
 
-def deploy_single_namespace(namespace, defaults_file_path: Path):
+def deploy_single_namespace(
+    namespace: dict,
+    defaults_file_path: Path
+) -> None:
+    """
+    Deploy a single namespace with the specified configuration.
+
+    Args:
+        namespace: Namespace configuration dictionary
+        defaults_file_path: Path to the defaults file for namespace configuration
+    """
     click.echo(f"Deploying namespace: {namespace.get('name')}")
     temp_override_file_path = ""
     try:
@@ -486,11 +596,23 @@ def deploy_single_namespace(namespace, defaults_file_path: Path):
             Path(temp_override_file_path).unlink()
 
 
-def is_windows():
+def is_windows() -> bool:
+    """
+    Check if the current platform is Windows.
+
+    Returns:
+        bool: True if running on Windows, False otherwise
+    """
     return sys.platform.startswith("win")
 
 
-def run_detached_process(command):
+def run_detached_process(command: str) -> None:
+    """
+    Run a command as a detached process using subprocess.
+
+    Args:
+        command: Shell command to run as a detached process
+    """
     if is_windows():
         # For Windows, use CREATE_NEW_PROCESS_GROUP and DETACHED_PROCESS
         subprocess.Popen(

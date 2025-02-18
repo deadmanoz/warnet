@@ -4,7 +4,7 @@ from .k8s import get_ingress_ip_or_host, wait_for_ingress_controller
 
 
 @click.command()
-def dashboard():
+def dashboard() -> None:
     """Open the Warnet dashboard in default browser"""
     import webbrowser
 

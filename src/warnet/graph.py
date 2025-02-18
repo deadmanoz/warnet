@@ -4,6 +4,7 @@ import random
 import sys
 from importlib.resources import files
 from pathlib import Path
+from typing import Union
 
 import click
 import inquirer
@@ -15,7 +16,7 @@ from .constants import DEFAULT_TAG, SUPPORTED_TAGS
 
 
 @click.group(name="graph", hidden=True)
-def graph():
+def graph() -> None:
     """Create and validate network graphs"""
 
 
@@ -28,7 +29,23 @@ def custom_graph(
     fork_obs_query_interval: int,
     caddy: bool,
     logging: bool,
-):
+) -> None:
+    """
+    Create a custom network graph with specified parameters.
+
+    Args:
+        num_nodes: Number of nodes in the network
+        num_connections: Number of connections per node
+        version: Bitcoin Core version tag to use
+        datadir: Directory to store network configuration
+        fork_observer: Enable fork observer if True
+        fork_obs_query_interval: Query interval for fork observer in seconds
+        caddy: Enable Caddy server if True
+        logging: Enable logging if True
+
+    Raises:
+        FileExistsError: If datadir already exists
+    """
     try:
         datadir.mkdir(parents=False, exist_ok=False)
     except FileExistsError as e:
@@ -94,7 +111,16 @@ def custom_graph(
     )
 
 
-def inquirer_create_network(project_path: Path):
+def inquirer_create_network(project_path: Path) -> Union[Path, bool]:
+    """
+    Interactive prompt to create a new network configuration.
+
+    Args:
+        project_path: Path to the project directory
+
+    Returns:
+        Path: Path to the created network configuration, or False if cancelled
+    """
     # Custom network configuration
     questions = [
         inquirer.Text(
@@ -205,8 +231,13 @@ def inquirer_create_network(project_path: Path):
 
 
 @click.command()
-def create():
-    """Create a new warnet network"""
+def create() -> bool:
+    """
+    Create a new warnet network.
+
+    Returns:
+        bool: False if creation fails, True otherwise
+    """
     try:
         project_path = Path(os.getcwd())
         # Check if the project has a networks directory
@@ -234,12 +265,28 @@ def create():
 @click.command()
 @click.argument("graph_file_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument("output_path", type=click.Path(exists=False, file_okay=False, dir_okay=True))
-def import_network(graph_file_path: str, output_path: str):
-    """Create a network from an imported lightning network graph JSON"""
+def import_network(graph_file_path: str, output_path: str) -> None:
+    """
+    Create a network from an imported lightning network graph JSON.
+
+    Args:
+        graph_file_path: Path to the input JSON graph file
+        output_path: Directory where the network configuration will be created
+    """
     print(_import_network(graph_file_path, output_path))
 
 
-def _import_network(graph_file_path, output_path):
+def _import_network(graph_file_path: Union[str, Path], output_path: Union[str, Path]) -> str:
+    """
+    Import a lightning network graph and create warnet network configuration.
+
+    Args:
+        graph_file_path: Path to the input JSON graph file
+        output_path: Directory where the network configuration will be created
+
+    Returns:
+        str: Success message with the path to created network
+    """
     output_path = Path(output_path)
     graph_file_path = Path(graph_file_path).resolve()
     with open(graph_file_path) as graph_file:

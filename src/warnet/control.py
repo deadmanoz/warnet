@@ -48,8 +48,13 @@ console = Console()
 
 @click.command()
 @click.argument("scenario_name", required=False)
-def stop(scenario_name):
-    """Stop a running scenario or all scenarios"""
+def stop(scenario_name: Optional[str]) -> None:
+    """
+    Stop a running scenario or all scenarios
+
+    Args:
+        scenario_name: Name of the scenario to stop
+    """
     active_scenarios = [sc.metadata.name for sc in get_mission("commander")]
 
     if not active_scenarios:
@@ -92,8 +97,13 @@ def stop(scenario_name):
     stop_scenario(scenario_name)
 
 
-def stop_scenario(scenario_name):
-    """Stop a single scenario using Helm"""
+def stop_scenario(scenario_name: str) -> None:
+    """
+    Stop a single scenario
+
+    Args:
+        scenario_name: Name of the scenario to stop
+    """
     # Stop the pod immediately (faster than uninstalling)
     namespace = get_default_namespace()
     cmd = f"kubectl --namespace {namespace} delete pod {scenario_name} --grace-period=0 --force"
@@ -111,13 +121,26 @@ def stop_scenario(scenario_name):
         f"[bold yellow]Initiated helm uninstall for release: {scenario_name}[/bold yellow]"
     )
 
+def stop_single(scenario: str) -> str:
+    """
+    Stop a single scenario
 
-def stop_all_scenarios(scenarios):
-    """Stop all active scenarios in parallel using multiprocessing"""
+    Args:
+        scenario: Name of the scenario to stop
 
-    def stop_single(scenario):
-        stop_scenario(scenario)
-        return f"Stopped scenario: {scenario}"
+    Returns:
+        str: Message indicating the scenario has been stopped
+    """
+    stop_scenario(scenario)
+    return f"Stopped scenario: {scenario}"
+
+def stop_all_scenarios(scenarios: list[str]) -> None:
+    """
+    Stop all active scenarios in parallel using multiprocessing
+
+    Args:
+        scenarios: List of scenario names to stop
+    """
 
     with console.status("[bold yellow]Stopping all scenarios...[/bold yellow]"), Pool() as pool:
         results = pool.map(stop_single, scenarios)
@@ -135,7 +158,7 @@ def stop_all_scenarios(scenarios):
     help="Skip confirmations",
 )
 @click.command()
-def down(force):
+def down(force: bool) -> None:
     """Bring down a running warnet quickly"""
 
     def uninstall_release(namespace, release_name):
@@ -143,7 +166,7 @@ def down(force):
         subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return f"Initiated uninstall for: {release_name} in namespace {namespace}"
 
-    def delete_pod(pod_name, namespace):
+    def delete_pod(pod_name: str, namespace: str) -> str:
         cmd = f"kubectl delete pod --ignore-not-found=true {pod_name} -n {namespace} --grace-period=0 --force"
         subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return f"Initiated deletion of pod: {pod_name} in namespace {namespace}"
@@ -214,7 +237,7 @@ def down(force):
     console.print("[bold green]Warnet teardown process completed.[/bold green]")
 
 
-def get_active_network(namespace):
+def get_active_network(namespace: str) -> Optional[str]:
     """Get the name of the active network (Helm release) in the given namespace"""
     cmd = f"helm list --namespace {namespace} --output json"
     result = run_command(cmd)
@@ -245,11 +268,11 @@ def get_active_network(namespace):
 def run(
     scenario_file: str,
     debug: bool,
-    source_dir,
-    additional_args: tuple[str],
+    source_dir: Optional[str],
+    additional_args: tuple[str, ...],
     admin: bool,
     namespace: Optional[str],
-):
+) -> Optional[str]:
     """
     Run a scenario from a file.
     Pass `-- --help` to get individual scenario help
@@ -260,11 +283,12 @@ def run(
 def _run(
     scenario_file: str,
     debug: bool,
-    source_dir,
-    additional_args: tuple[str],
+    source_dir: Optional[str],
+    additional_args: tuple[str, ...],
     admin: bool,
     namespace: Optional[str],
-) -> str:
+) -> Optional[str]:
+    """Internal implementation of run command"""
     namespace = get_default_namespace_or(namespace)
 
     scenario_path = Path(scenario_file).resolve()
@@ -280,7 +304,7 @@ def _run(
     archive_buffer = io.BytesIO()
 
     # No need to copy the entire scenarios/ directory into the archive
-    def filter(path):
+    def filter(path: str) -> bool:
         if any(needle in str(path) for needle in [".pyc", ".csv", ".DS_Store"]):
             return False
         if any(
@@ -375,12 +399,13 @@ def _run(
 @click.argument("pod_name", type=str, default="")
 @click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs")
 @click.option("--namespace", type=str, default="default", show_default=True)
-def logs(pod_name: str, follow: bool, namespace: str):
+def logs(pod_name: str, follow: bool, namespace: str) -> None:
     """Show the logs of a pod"""
     return _logs(pod_name, follow, namespace)
 
 
-def _logs(pod_name: str, follow: bool, namespace: Optional[str] = None):
+def _logs(pod_name: str, follow: bool, namespace: Optional[str] = None) -> None:
+    """Internal implementation of logs command"""
     namespace = get_default_namespace_or(namespace)
 
     def format_pods(pods: list[V1Pod]) -> list[str]:
@@ -463,7 +488,12 @@ def _logs(pod_name: str, follow: bool, namespace: Optional[str] = None):
     type=str,
     help="Comma-separated list of directories and/or files to include in the snapshot",
 )
-def snapshot(tank_name, snapshot_all, output, filter):
+def snapshot(
+    tank_name: Optional[str],
+    snapshot_all: bool, # TODO: default value? When is this used?
+    output: str,
+    filter: Optional[str]
+) -> None:
     """Create a snapshot of a tank's Bitcoin data or snapshot all tanks"""
     tanks = get_mission("tank")
 
@@ -483,14 +513,27 @@ def snapshot(tank_name, snapshot_all, output, filter):
         select_and_snapshot_tank(tanks, output, filter_list)
 
 
-def find_tank_by_name(tanks, tank_name):
+def find_tank_by_name(tanks: list[V1Pod], tank_name: str) -> Optional[V1Pod]:
+    """Find a tank pod by name"""
     for tank in tanks:
         if tank.metadata.name == tank_name:
             return tank
     return None
 
 
-def snapshot_all_tanks(tanks, output_dir, filter_list):
+def snapshot_all_tanks(
+        tanks: list[V1Pod],
+        output_dir: str,
+        filter_list: Optional[list[str]]
+) -> None:
+    """
+    Snapshot all tanks
+
+    Args:
+        tanks: List of tank pods
+        output_dir: Output directory for snapshots
+        filter_list: List of directories and/or files to include in the snapshot
+    """
     with console.status("[bold yellow]Snapshotting all tanks...[/bold yellow]"):
         for tank in tanks:
             tank_name = tank.metadata.name
@@ -499,7 +542,21 @@ def snapshot_all_tanks(tanks, output_dir, filter_list):
     console.print("[bold green]All tank snapshots completed.[/bold green]")
 
 
-def snapshot_single_tank(tank_name, tanks, output_dir, filter_list):
+def snapshot_single_tank(
+    tank_name: str,
+    tanks: list[V1Pod],
+    output_dir: str,
+    filter_list: Optional[list[str]]
+) -> None:
+    """
+    Snapshot a single tank
+
+    Args:
+        tank_name: Name of the tank to snapshot
+        tanks: List of tank pods
+        output_dir: Output directory for snapshots
+        filter_list: List of directories and/or files to include in the snapshot
+    """
     tank = find_tank_by_name(tanks, tank_name)
     if tank:
         chain = tank.metadata.labels["chain"]
@@ -508,7 +565,20 @@ def snapshot_single_tank(tank_name, tanks, output_dir, filter_list):
         console.print(f"[bold red]No active tank found with name: {tank_name}[/bold red]")
 
 
-def select_and_snapshot_tank(tanks, output_dir, filter_list):
+def select_and_snapshot_tank(
+    tanks: list[V1Pod],
+    output_dir: str,
+    filter_list: Optional[list[str]]
+) -> None:
+    """
+    Select and snapshot a tank interactively.
+    The user is prompted to enter the number of the tank to snapshot.
+
+    Args:
+        tanks: List of tank pods
+        output_dir: Output directory for snapshots
+        filter_list: List of directories and/or files to include in the snapshot
+    """
     table = Table(title="Active Tanks", show_header=True, header_style="bold magenta")
     table.add_column("Number", style="cyan", justify="right")
     table.add_column("Tank Name", style="green")
@@ -535,7 +605,19 @@ def select_and_snapshot_tank(tanks, output_dir, filter_list):
     snapshot_tank(tank_name, chain, output_dir, filter_list)
 
 
-def snapshot_tank(tank_name, chain, output_dir, filter_list):
+def snapshot_tank(
+    tank_name: str,
+    chain: str,
+    output_dir: str,
+    filter_list: Optional[list[str]]
+) -> None:
+    """
+    Create a snapshot of a tank's data
+
+    Args:
+        tank_name: Name of the tank to snapshot
+        chain: Chain of the tank
+    """
     try:
         output_path = Path(output_dir).resolve()
         snapshot_bitcoin_datadir(tank_name, chain, str(output_path), filter_list)

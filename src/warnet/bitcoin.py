@@ -3,7 +3,7 @@ import re
 import sys
 from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import Any, Optional, Union
 
 import click
 from test_framework.messages import ser_uint256
@@ -16,7 +16,7 @@ from .process import run_command
 
 
 @click.group(name="bitcoin")
-def bitcoin():
+def bitcoin() -> None:
     """Control running bitcoin nodes"""
 
 
@@ -25,9 +25,15 @@ def bitcoin():
 @click.argument("method", type=str)
 @click.argument("params", type=str, nargs=-1)  # this will capture all remaining arguments
 @click.option("--namespace", default=None, show_default=True)
-def rpc(tank: str, method: str, params: str, namespace: Optional[str]):
+def rpc(tank: str, method: str, params: str, namespace: Optional[str]) -> None:
     """
     Call bitcoin-cli <method> [params] on <tank pod name>
+
+    Args:
+        tank: (tank) pod name of the bitcoin node
+        method: RPC method to call
+        params: Parameters for the RPC method
+        namespace: Kubernetes namespace (optional)
     """
     try:
         result = _rpc(tank, method, params, namespace)
@@ -37,9 +43,20 @@ def rpc(tank: str, method: str, params: str, namespace: Optional[str]):
     print(result)
 
 
-def _rpc(tank: str, method: str, params: str, namespace: Optional[str] = None) -> str:
-    # bitcoin-cli should be able to read bitcoin.conf inside the container
-    # so no extra args like port, chain, username or password are needed
+def _rpc(tank: str, method: str, params: tuple[str, ...], namespace: Optional[str] = None) -> str:
+    """
+    Execute RPC command on bitcoin node. bitcoin-cli should be able to read bitcoin.conf
+    inside the container so no extra args like port, chain, username or password are needed
+
+    Args:
+        tank: (tank) pod name of the bitcoin node
+        method: RPC method to call
+        params: Parameters for the RPC method
+        namespace: Kubernetes namespace (optional)
+
+    Returns:
+        Output from the RPC command
+    """
     namespace = get_default_namespace_or(namespace)
     if params:
         cmd = f"kubectl -n {namespace} exec {tank} --container {BITCOINCORE_CONTAINER} -- bitcoin-cli {method} {' '.join(map(str, params))}"
@@ -51,7 +68,7 @@ def _rpc(tank: str, method: str, params: str, namespace: Optional[str] = None) -
 @bitcoin.command()
 @click.argument("tank", type=str, required=True)
 @click.option("--namespace", default=None, show_default=True)
-def debug_log(tank: str, namespace: Optional[str]):
+def debug_log(tank: str, namespace: Optional[str]) -> None:
     """
     Fetch the Bitcoin Core debug log from <tank pod name>
     """
@@ -192,9 +209,25 @@ def messages(tank_a: str, tank_b: str, chain: str) -> None:
         print(f"Error fetching messages between nodes {tank_a} and {tank_b}: {e}")
 
 
-def get_messages(tank_a: str, tank_b: str, chain: str, namespace_a: str, namespace_b: str):
+def get_messages(
+    tank_a: str,
+    tank_b: str,
+    chain: str,
+    namespace_a: str,
+    namespace_b: str
+) -> list[dict[str, Any]]:
     """
     Fetch messages from the message capture files
+
+    Args:
+        tank_a: First tank pod name
+        tank_b: Second tank pod name
+        chain: Bitcoin chain (e.g., regtest)
+        namespace_a: Namespace for tank_a
+        namespace_b: Namespace for tank_b
+
+    Returns:
+        List of message dictionaries containing message details
     """
     subdir = "" if chain == "main" else f"{chain}/"
     base_dir = f"/root/.bitcoin/{subdir}message_capture"
@@ -238,7 +271,17 @@ def get_messages(tank_a: str, tank_b: str, chain: str, namespace_a: str, namespa
 
 # This function is a hacked-up copy of process_file() from
 # Bitcoin Core contrib/message-capture/message-capture-parser.py
-def parse_raw_messages(blob: bytes, outbound: bool) -> list[dict]:
+def parse_raw_messages(blob: bytes, outbound: bool) -> list[dict[str, Any]]:
+    """
+    Parse raw message data from Bitcoin Core message capture files
+
+    Args:
+        blob: Raw message data
+        outbound: Whether messages are outbound
+
+    Returns:
+        List of parsed message dictionaries
+    """
     TIME_SIZE = 8
     LENGTH_SIZE = 4
     MSGTYPE_SIZE = 12
@@ -307,7 +350,7 @@ def parse_raw_messages(blob: bytes, outbound: bool) -> list[dict]:
     return messages
 
 
-def to_jsonable(obj: str):
+def to_jsonable(obj: str) -> Union[dict, list, str]:
     HASH_INTS = [
         "blockhash",
         "block_hash",
