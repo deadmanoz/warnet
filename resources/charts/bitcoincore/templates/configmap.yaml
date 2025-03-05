@@ -14,6 +14,7 @@ data:
     rpcpassword={{ .Values.global.rpcpassword }}
     zmqpubrawblock=tcp://0.0.0.0:{{ .Values.global.ZMQBlockPort }}
     zmqpubrawtx=tcp://0.0.0.0:{{ .Values.global.ZMQTxPort }}
+    zmqpubsequence=tcp://0.0.0.0:{{ .Values.global.ZMQSequencePort }}
     {{- .Values.defaultConfig | nindent 4 }}
     {{- .Values.config | nindent 4 }}
     {{- range .Values.addnode }}

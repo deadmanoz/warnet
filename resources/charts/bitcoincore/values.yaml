@@ -113,6 +113,7 @@ global:
     P2PPort: 38333
   ZMQTxPort: 28333
   ZMQBlockPort: 28332
+  ZMQSequencePort: 28334
   rpcpassword: gn0cchi
 
 baseConfig: |

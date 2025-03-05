@@ -11,6 +11,7 @@ metadata:
     RPCPort: "{{ index .Values.global .Values.global.chain "RPCPort" }}"
     ZMQTxPort: "{{ .Values.global.ZMQTxPort }}"
     ZMQBlockPort: "{{ .Values.global.ZMQBlockPort }}"
+    ZMQSequencePort: "{{ .Values.global.ZMQSequencePort }}"
     rpcpassword: {{ .Values.global.rpcpassword }}
     app: {{ include "bitcoincore.fullname" . }}
     {{- if .Values.collectLogs }}
@@ -58,6 +59,9 @@ spec:
           protocol: TCP
         - name: zmq-block
           containerPort: {{ .Values.global.ZMQBlockPort }}
+          protocol: TCP
+        - name: zmq-sequence
+          containerPort: {{ .Values.global.ZMQSequencePort }}
           protocol: TCP
       livenessProbe:
         {{- toYaml .Values.livenessProbe | nindent 8 }}

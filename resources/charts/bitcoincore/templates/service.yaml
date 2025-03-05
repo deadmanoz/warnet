@@ -24,6 +24,10 @@ spec:
       targetPort: zmq-block
       protocol: TCP
       name: zmq-block
+    - port: {{ .Values.global.ZMQSequencePort }}
+      targetPort: zmq-sequence
+      protocol: TCP
+      name: zmq-sequence
     - port: {{ .Values.prometheusMetricsPort }}
       targetPort: prom-metrics
       protocol: TCP
