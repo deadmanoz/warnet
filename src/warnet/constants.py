@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from importlib.resources import files
 from pathlib import Path
 
@@ -20,9 +21,33 @@ HELM_COMMAND = "helm upgrade --install"
 
 TANK_MISSION = "tank"
 COMMANDER_MISSION = "commander"
+LIGHTNING_MISSION = "lightning"
 
 BITCOINCORE_CONTAINER = "bitcoincore"
 COMMANDER_CONTAINER = "commander"
+
+
+class HookValue(Enum):
+    PRE_DEPLOY = "preDeploy"
+    POST_DEPLOY = "postDeploy"
+    PRE_NODE = "preNode"
+    POST_NODE = "postNode"
+    PRE_NETWORK = "preNetwork"
+    POST_NETWORK = "postNetwork"
+
+
+class WarnetContent(Enum):
+    HOOK_VALUE = "hook_value"
+    NAMESPACE = "namespace"
+    ANNEX = "annex"
+
+
+class AnnexMember(Enum):
+    NODE_NAME = "node_name"
+
+
+PLUGIN_ANNEX = "annex"
+
 
 # Directories and files for non-python assets, e.g., helm charts, example scenarios, default configs
 SRC_DIR = files("warnet")
@@ -32,6 +57,7 @@ NAMESPACES_DIR = RESOURCES_DIR.joinpath("namespaces")
 SCENARIOS_DIR = RESOURCES_DIR.joinpath("scenarios")
 CHARTS_DIR = RESOURCES_DIR.joinpath("charts")
 MANIFESTS_DIR = RESOURCES_DIR.joinpath("manifests")
+PLUGINS_DIR = RESOURCES_DIR.joinpath("plugins")
 NETWORK_FILE = "network.yaml"
 DEFAULTS_FILE = "node-defaults.yaml"
 NAMESPACES_FILE = "namespaces.yaml"
@@ -39,6 +65,7 @@ DEFAULTS_NAMESPACE_FILE = "namespace-defaults.yaml"
 
 # Helm charts
 BITCOIN_CHART_LOCATION = str(CHARTS_DIR.joinpath("bitcoincore"))
+LND_CHART_LOCATION = str(CHARTS_DIR.joinpath("lnd"))
 FORK_OBSERVER_CHART = str(CHARTS_DIR.joinpath("fork-observer"))
 COMMANDER_CHART = str(CHARTS_DIR.joinpath("commander"))
 NAMESPACES_CHART_LOCATION = CHARTS_DIR.joinpath("namespaces")
@@ -95,6 +122,12 @@ LOGGING_CONFIG = {
         "werkzeug": {"level": "WARNING", "propagate": 1},
     },
 }
+
+LOGGING_CRD_COMMANDS = [
+    "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts",
+    "helm repo update",
+    "helm upgrade --install prometheus-operator-crds prometheus-community/prometheus-operator-crds",
+]
 
 # Helm commands for logging setup
 # TODO: also lots of hardcode stuff in these helm commands, will need to fix this when moving to helm charts

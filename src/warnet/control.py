@@ -6,6 +6,7 @@ import sys
 import time
 import zipapp
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Optional
 
@@ -112,10 +113,18 @@ def stop_scenario(scenario_name):
 
 
 def stop_all_scenarios(scenarios):
-    """Stop all active scenarios using Helm"""
-    with console.status("[bold yellow]Stopping all scenarios...[/bold yellow]"):
-        for scenario in scenarios:
-            stop_scenario(scenario)
+    """Stop all active scenarios in parallel using multiprocessing"""
+
+    def stop_single(scenario):
+        stop_scenario(scenario)
+        return f"Stopped scenario: {scenario}"
+
+    with console.status("[bold yellow]Stopping all scenarios...[/bold yellow]"), Pool() as pool:
+        results = pool.map(stop_single, scenarios)
+
+    for result in results:
+        console.print(f"[bold green]{result}[/bold green]")
+
     console.print("[bold green]All scenarios have been stopped.[/bold green]")
 
 
@@ -231,18 +240,31 @@ def get_active_network(namespace):
     "--source_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True), required=False
 )
 @click.argument("additional_args", nargs=-1, type=click.UNPROCESSED)
+@click.option("--admin", is_flag=True, default=False, show_default=False)
 @click.option("--namespace", default=None, show_default=True)
 def run(
     scenario_file: str,
     debug: bool,
     source_dir,
     additional_args: tuple[str],
+    admin: bool,
     namespace: Optional[str],
 ):
     """
     Run a scenario from a file.
     Pass `-- --help` to get individual scenario help
     """
+    return _run(scenario_file, debug, source_dir, additional_args, admin, namespace)
+
+
+def _run(
+    scenario_file: str,
+    debug: bool,
+    source_dir,
+    additional_args: tuple[str],
+    admin: bool,
+    namespace: Optional[str],
+) -> str:
     namespace = get_default_namespace_or(namespace)
 
     scenario_path = Path(scenario_file).resolve()
@@ -252,24 +274,7 @@ def run(
     if additional_args and ("--help" in additional_args or "-h" in additional_args):
         return subprocess.run([sys.executable, scenario_path, "--help"])
 
-    # Collect tank data for warnet.json
     name = f"commander-{scenario_name.replace('_', '')}-{int(time.time())}"
-    tankpods = get_mission("tank")
-    tanks = [
-        {
-            "tank": tank.metadata.name,
-            "chain": tank.metadata.labels["chain"],
-            "rpc_host": tank.status.pod_ip,
-            "rpc_port": int(tank.metadata.labels["RPCPort"]),
-            "rpc_user": "user",
-            "rpc_password": tank.metadata.labels["rpcpassword"],
-            "init_peers": [],
-        }
-        for tank in tankpods
-    ]
-
-    # Encode tank data for warnet.json
-    warnet_data = json.dumps(tanks).encode()
 
     # Create in-memory buffer to store python archive instead of writing to disk
     archive_buffer = io.BytesIO()
@@ -280,7 +285,13 @@ def run(
             return False
         if any(
             needle in str(path)
-            for needle in ["__init__.py", "commander.py", "test_framework", scenario_path.name]
+            for needle in [
+                "__init__.py",
+                "commander.py",
+                "test_framework",
+                "ln_framework",
+                scenario_path.name,
+            ]
         ):
             print(f"Including: {path}")
             return True
@@ -321,6 +332,8 @@ def run(
         ]
 
         # Add additional arguments
+        if admin:
+            helm_command.extend(["--set", "admin=true"])
         if additional_args:
             helm_command.extend(["--set", f"args={' '.join(additional_args)}"])
 
@@ -339,12 +352,11 @@ def run(
     except subprocess.CalledProcessError as e:
         print(f"Failed to deploy scenario commander: {scenario_name}")
         print(f"Error: {e.stderr}")
+        return None
 
     # upload scenario files and network data to the init container
     wait_for_init(name, namespace=namespace)
     if write_file_to_container(
-        name, "init", "/shared/warnet.json", warnet_data, namespace=namespace
-    ) and write_file_to_container(
         name, "init", "/shared/archive.pyz", archive_data, namespace=namespace
     ):
         print(f"Successfully uploaded scenario data to commander: {scenario_name}")
@@ -355,6 +367,8 @@ def run(
         _logs(pod_name=name, follow=True, namespace=namespace)
         print("Deleting pod...")
         delete_pod(name, namespace=namespace)
+
+    return name
 
 
 @click.command()
