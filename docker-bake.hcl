@@ -1,49 +1,29 @@
-group "all" {
-  targets = [
-    "bitcoin-28",
-    "bitcoin-27",
-    "bitcoin-26",
-    "v0-21-1",
-    "v0-20-0",
-    "v0-19-2",
-    "v0-17-0",
-    "v0-16-1",
-    "bitcoin-unknown-message",
-    "bitcoin-invalid-blocks",
-    "bitcoin-50-orphans",
-    "bitcoin-no-mp-trim",
-    "bitcoin-disabled-opcodes",
-    "bitcoin-5k-inv"
-  ]
+variable "maintained_targets" {
+  default = ["bitcoin-28", "bitcoin-27", "bitcoin-26"]
+}
+
+variable "practice_targets" {
+  default = ["bitcoin-unknown-message", "bitcoin-invalid-blocks", "bitcoin-50-orphans", "bitcoin-no-mp-trim", "bitcoin-disabled-opcodes", "bitcoin-5k-inv"]
+}
+
+variable "vulnerable_targets" {
+  default = ["v0-21-1", "v0-20-0", "v0-19-2", "v0-17-0", "v0-16-1"]
 }
 
 group "maintained" {
-  targets = [
-    "bitcoin-28",
-    "bitcoin-27",
-    "bitcoin-26"
-  ]
+  targets = maintained_targets
 }
 
 group "practice" {
-  targets = [
-    "bitcoin-unknown-message",
-    "bitcoin-invalid-blocks",
-    "bitcoin-50-orphans",
-    "bitcoin-no-mp-trim",
-    "bitcoin-disabled-opcodes",
-    "bitcoin-5k-inv"
-  ]
+  targets = practice_targets
 }
 
 group "vulnerable" {
-  targets = [
-    "v0-21-1",
-    "v0-20-0",
-    "v0-19-2",
-    "v0-17-0",
-    "v0-16-1",
-  ]
+  targets = vulnerable_targets
+}
+
+group "all" {
+  targets = concat(maintained_targets, practice_targets, vulnerable_targets)
 }
 
 target "maintained-base" {
