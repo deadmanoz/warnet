@@ -37,7 +37,7 @@ target "maintained-base" {
 
 target "cmake-base" {
   inherits = ["maintained-base"]
-  dockerfile = "./Dockerfile.dev"
+  dockerfile = "./Dockerfile"
   args = {
     BUILD_ARGS = "-DBUILD_TESTS=OFF -DBUILD_GUI=OFF -DBUILD_BENCH=OFF -DBUILD_FUZZ_BINARY=OFF -DWITH_ZMQ=ON"
   }
@@ -45,7 +45,7 @@ target "cmake-base" {
 
 target "autogen-base" {
   inherits = ["maintained-base"]
-  dockerfile = "./Dockerfile"
+  dockerfile = "./Dockerfile.pre-v29"
 }
 
 target "bitcoin-master" {
@@ -81,7 +81,7 @@ target "bitcoin-26" {
 }
 
 target "practice-base" {
-  dockerfile = "./Dockerfile"
+  dockerfile = "./Dockerfile.pre-v29"
   context = "./resources/images/bitcoin/insecure"
   contexts = {
       bitcoin-src = "."
@@ -145,7 +145,7 @@ target "bitcoin-5k-inv" {
 }
 
 target "CVE-base" {
-  dockerfile = "./Dockerfile"
+  dockerfile = "./Dockerfile.pre-v29"
   context = "./resources/images/bitcoin/insecure"
   contexts = {
       bitcoin-src = "."
